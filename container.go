@@ -35,6 +35,12 @@ func (c *container) NamedBind(instance interface{}, qualifier string) error {
 	return c.bind(instance, qualifier)
 }
 
+func (c *container) ResolveTree() error {
+	c.treeResolved = true
+	// TODO : this must inject dependencies to components in container
+	return nil
+}
+
 func (c *container) bind(instance interface{}, qualifier string) error {
 	if c.treeResolved {
 		return errors.New(`cannot bind new instances after dependency tree is resolved`)
