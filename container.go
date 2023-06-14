@@ -6,10 +6,9 @@ import (
 )
 
 type bind struct {
-	instance         interface{}
-	instanceResolver interface{}
-	singleton        bool
-	qualifier        string
+	instance  interface{}
+	singleton bool
+	qualifier string
 }
 
 type container struct {
@@ -35,7 +34,7 @@ func (c *container) NamedBind(instance interface{}, qualifier string) error {
 	return c.bind(instance, qualifier)
 }
 
-func (c *container) ResolveTree() error {
+func (c *container) ResolveDependencyTree() error {
 	c.treeResolved = true
 	// TODO : this must inject dependencies to components in container
 	return nil
