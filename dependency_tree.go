@@ -2,6 +2,7 @@ package container
 
 import (
 	"reflect"
+	"unsafe"
 )
 
 const (
@@ -85,6 +86,29 @@ func buildDependencyTypeMap(mapping map[*bind][]bindToTypeValue) (typeMap map[re
 	}
 
 	return typeMap
+}
+
+func (t *dependencyTree) injectDependencies(c container) {
+	for _, b := range c.binds {
+		receiverType := reflect.TypeOf(b.instance)
+		if receiverType.Kind() != reflect.Pointer || receiverType.Elem().Kind() != reflect.Struct {
+			continue
+		}
+
+		fields := reflect.ValueOf(b).Elem()
+
+		for i := 0; i < fields.NumField(); i++ {
+			field := fields.Field(i)
+
+			if qualifier, tagExists := fields.Type().Field(i).Tag.Lookup(tagInject); tagExists {
+				targetType := field.Type()
+				instance := t.typeToBind[targetType][qualifier]
+
+				pointer := reflect.NewAt(targetType, unsafe.Pointer(field.UnsafeAddr())).Elem()
+				pointer.Set(reflect.ValueOf(instance))
+			}
+		}
+	}
 }
 
 func findSingleInstances(typeMap map[reflect.Type]map[string][]*bind) (map[reflect.Type]map[string]*bind, error) {
