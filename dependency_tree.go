@@ -17,10 +17,12 @@ type bindToTypeValue struct {
 	qualifier  string
 }
 
-func newDependencyTree(c container) (tree dependencyTree) {
-	_ = buildDependencyBindMap(c)
+func newDependencyTree(c container) dependencyTree {
+	depMap := buildDependencyBindMap(c)
 
-	return tree
+	_ = buildDependencyTypeMap(depMap)
+
+	return dependencyTree{typeToBind: nil}
 }
 
 func buildDependencyBindMap(c container) map[*bind][]bindToTypeValue {
@@ -48,4 +50,35 @@ func buildDependencyBindMap(c container) map[*bind][]bindToTypeValue {
 	}
 
 	return bindToType
+}
+
+func buildDependencyTypeMap(mapping map[*bind][]bindToTypeValue) (typeMap map[reflect.Type]map[string][]*bind) {
+	typeMap = make(map[reflect.Type]map[string][]*bind)
+
+	for _, bindToTypeValues := range mapping {
+		for _, value := range bindToTypeValues {
+			if _, ok := typeMap[value.targetType]; !ok {
+				typeMap[value.targetType] = make(map[string][]*bind)
+			}
+			typeMap[value.targetType][value.qualifier] = make([]*bind, 0)
+		}
+	}
+
+	for bind := range mapping {
+		for targetType, qualifierMap := range typeMap {
+			if reflect.TypeOf(bind).ConvertibleTo(targetType) {
+				if _, hasEmptyQualifier := qualifierMap[``]; hasEmptyQualifier {
+					qualifierMap[``] = append(qualifierMap[``], bind)
+				}
+				if bind.qualifier == `` {
+					continue
+				}
+				if _, hasSpecificQualifier := qualifierMap[bind.qualifier]; hasSpecificQualifier {
+					qualifierMap[bind.qualifier] = append(qualifierMap[bind.qualifier], bind)
+				}
+			}
+		}
+	}
+
+	return typeMap
 }
