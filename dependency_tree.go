@@ -9,7 +9,7 @@ const (
 )
 
 type dependencyTree struct {
-	typeToBind map[reflect.Type]map[string][]*bind
+	typeToBind map[reflect.Type]map[string]*bind
 }
 
 type bindToTypeValue struct {
@@ -17,10 +17,16 @@ type bindToTypeValue struct {
 	qualifier  string
 }
 
-func newDependencyTree(c container) dependencyTree {
+func buildTree(c container) (*dependencyTree, error) {
 	depMap := buildDependencyBindMap(c)
 
-	return dependencyTree{typeToBind: buildDependencyTypeMap(depMap)}
+	typeMap := buildDependencyTypeMap(depMap)
+	singleInstanceMap, err := findSingleInstances(typeMap)
+	if err != nil {
+		return nil, err
+	}
+
+	return &dependencyTree{typeToBind: singleInstanceMap}, nil
 }
 
 func buildDependencyBindMap(c container) map[*bind][]bindToTypeValue {
@@ -79,4 +85,46 @@ func buildDependencyTypeMap(mapping map[*bind][]bindToTypeValue) (typeMap map[re
 	}
 
 	return typeMap
+}
+
+func findSingleInstances(typeMap map[reflect.Type]map[string][]*bind) (map[reflect.Type]map[string]*bind, error) {
+	singleInstances := make(map[reflect.Type]map[string]*bind)
+	notFound := make([]bindToTypeValue, 0)
+	multipleFound := make(map[bindToTypeValue][]bindToTypeValue)
+
+	for targetType, qualifierMap := range typeMap {
+		for qualifier, binds := range qualifierMap {
+			switch len(binds) {
+			case 0:
+				notFound = append(notFound, bindToTypeValue{
+					targetType: targetType,
+					qualifier:  qualifier,
+				})
+			case 1:
+				singleInstances[targetType] = map[string]*bind{qualifier: binds[0]}
+			default:
+				matches := make([]bindToTypeValue, 0)
+				for _, bind := range binds {
+					matches = append(matches, bindToTypeValue{
+						targetType: reflect.TypeOf(bind),
+						qualifier:  bind.qualifier,
+					})
+				}
+
+				multipleFound[bindToTypeValue{
+					targetType: targetType,
+					qualifier:  qualifier,
+				}] = matches
+			}
+		}
+	}
+
+	if len(notFound) > 0 || len(multipleFound) > 0 {
+		return singleInstances, DependencyResolveError{
+			notFound:      notFound,
+			multipleFound: multipleFound,
+		}
+	}
+
+	return singleInstances, nil
 }
