@@ -1,4 +1,4 @@
-package container
+package injector
 
 import (
 	"reflect"
@@ -21,7 +21,7 @@ type bindToTypeValue struct {
 func buildTree(c *container) (*dependencyTree, error) {
 	depMap := buildDependencyBindMap(c)
 
-	typeMap := buildDependencyTypeMap(depMap)
+	typeMap := buildDependencyTypeMap(c, depMap)
 	singleInstanceMap, err := findSingleInstances(typeMap)
 	if err != nil {
 		return nil, err
@@ -40,7 +40,7 @@ func buildDependencyBindMap(c *container) map[*bind][]bindToTypeValue {
 			continue
 		}
 
-		fields := reflect.ValueOf(b).Elem()
+		fields := reflect.ValueOf(b.instance).Elem()
 
 		for i := 0; i < fields.NumField(); i++ {
 			field := fields.Field(i)
@@ -57,7 +57,7 @@ func buildDependencyBindMap(c *container) map[*bind][]bindToTypeValue {
 	return bindToType
 }
 
-func buildDependencyTypeMap(mapping map[*bind][]bindToTypeValue) (typeMap map[reflect.Type]map[string][]*bind) {
+func buildDependencyTypeMap(c *container, mapping map[*bind][]bindToTypeValue) (typeMap map[reflect.Type]map[string][]*bind) {
 	typeMap = make(map[reflect.Type]map[string][]*bind)
 
 	for _, bindToTypeValues := range mapping {
@@ -69,9 +69,9 @@ func buildDependencyTypeMap(mapping map[*bind][]bindToTypeValue) (typeMap map[re
 		}
 	}
 
-	for bind := range mapping {
+	for _, bind := range c.binds {
 		for targetType, qualifierMap := range typeMap {
-			if reflect.TypeOf(bind).ConvertibleTo(targetType) {
+			if reflect.TypeOf(bind.instance).ConvertibleTo(targetType) {
 				if _, hasEmptyQualifier := qualifierMap[``]; hasEmptyQualifier {
 					qualifierMap[``] = append(qualifierMap[``], bind)
 				}
@@ -95,14 +95,14 @@ func (t *dependencyTree) injectDependencies(c *container) {
 			continue
 		}
 
-		fields := reflect.ValueOf(b).Elem()
+		fields := reflect.ValueOf(b.instance).Elem()
 
 		for i := 0; i < fields.NumField(); i++ {
 			field := fields.Field(i)
 
 			if qualifier, tagExists := fields.Type().Field(i).Tag.Lookup(tagInject); tagExists {
 				targetType := field.Type()
-				instance := t.typeToBind[targetType][qualifier]
+				instance := t.typeToBind[targetType][qualifier].instance
 
 				pointer := reflect.NewAt(targetType, unsafe.Pointer(field.UnsafeAddr())).Elem()
 				pointer.Set(reflect.ValueOf(instance))

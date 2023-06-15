@@ -1,4 +1,4 @@
-package container
+package injector
 
 type Container interface {
 	Bind(instance interface{}) error

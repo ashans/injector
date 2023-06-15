@@ -1,4 +1,4 @@
-package container
+package injector
 
 import (
 	"fmt"
