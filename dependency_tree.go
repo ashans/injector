@@ -9,7 +9,7 @@ const (
 )
 
 type dependencyTree struct {
-	typeToBind map[reflect.Type]map[string]*bind
+	typeToBind map[reflect.Type]map[string][]*bind
 }
 
 type bindToTypeValue struct {
@@ -20,9 +20,7 @@ type bindToTypeValue struct {
 func newDependencyTree(c container) dependencyTree {
 	depMap := buildDependencyBindMap(c)
 
-	_ = buildDependencyTypeMap(depMap)
-
-	return dependencyTree{typeToBind: nil}
+	return dependencyTree{typeToBind: buildDependencyTypeMap(depMap)}
 }
 
 func buildDependencyBindMap(c container) map[*bind][]bindToTypeValue {
