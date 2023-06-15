@@ -18,7 +18,7 @@ type bindToTypeValue struct {
 	qualifier  string
 }
 
-func buildTree(c container) (*dependencyTree, error) {
+func buildTree(c *container) (*dependencyTree, error) {
 	depMap := buildDependencyBindMap(c)
 
 	typeMap := buildDependencyTypeMap(depMap)
@@ -30,7 +30,7 @@ func buildTree(c container) (*dependencyTree, error) {
 	return &dependencyTree{typeToBind: singleInstanceMap}, nil
 }
 
-func buildDependencyBindMap(c container) map[*bind][]bindToTypeValue {
+func buildDependencyBindMap(c *container) map[*bind][]bindToTypeValue {
 	bindToType := make(map[*bind][]bindToTypeValue)
 
 	for _, b := range c.binds {
@@ -88,7 +88,7 @@ func buildDependencyTypeMap(mapping map[*bind][]bindToTypeValue) (typeMap map[re
 	return typeMap
 }
 
-func (t *dependencyTree) injectDependencies(c container) {
+func (t *dependencyTree) injectDependencies(c *container) {
 	for _, b := range c.binds {
 		receiverType := reflect.TypeOf(b.instance)
 		if receiverType.Kind() != reflect.Pointer || receiverType.Elem().Kind() != reflect.Struct {

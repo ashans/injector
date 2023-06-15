@@ -35,8 +35,14 @@ func (c *container) NamedBind(instance interface{}, qualifier string) error {
 }
 
 func (c *container) ResolveDependencyTree() error {
+	tree, err := buildTree(c)
+	if err != nil {
+		return err
+	}
+
+	tree.injectDependencies(c)
 	c.treeResolved = true
-	// TODO : this must inject dependencies to components in container
+
 	return nil
 }
 
