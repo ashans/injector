@@ -41,7 +41,8 @@ func (b bindToTypeValue) DebugString() string {
 
 func buildTree(c *container) (*dependencyTree, error) {
 	depMap := buildDependencyBindMap(c)
-
+	s := fmt.Sprintf(`%v`, depMap[c.binds[3]][0].targetType)
+	println(s)
 	typeMap := buildDependencyTypeMap(c, depMap)
 	singleInstanceMap, err := findSingleInstances(typeMap)
 	if err != nil {
@@ -152,7 +153,10 @@ func findSingleInstances(typeMap map[reflect.Type]map[string][]*bind) (map[refle
 					qualifier:  qualifier,
 				})
 			case 1:
-				singleInstances[targetType] = map[string]*bind{qualifier: binds[0]}
+				if _, hasTargetTypeMap := singleInstances[targetType]; !hasTargetTypeMap {
+					singleInstances[targetType] = make(map[string]*bind)
+				}
+				singleInstances[targetType][qualifier] = binds[0]
 			default:
 				matches := make([]bindToTypeValue, 0)
 				for _, bind := range binds {
