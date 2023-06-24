@@ -40,7 +40,12 @@ func (c *container) ResolveDependencyTree() error {
 		return err
 	}
 
-	tree.injectDependencies(c)
+	tree.PrintMatch()
+
+	err = tree.injectDependencies(c)
+	if err != nil {
+		return err
+	}
 	c.treeResolved = true
 
 	return nil

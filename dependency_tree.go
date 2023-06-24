@@ -1,6 +1,7 @@
 package injector
 
 import (
+	"fmt"
 	"reflect"
 	"unsafe"
 )
@@ -13,9 +14,29 @@ type dependencyTree struct {
 	typeToBind map[reflect.Type]map[string]*bind
 }
 
+func (d *dependencyTree) PrintMatch() {
+	for t, qMap := range d.typeToBind {
+		for q, b := range qMap {
+			fmt.Printf("type: %v with qualifier: %s matched with bind type: %v with qualifier: %s\n", t, q,
+				reflect.TypeOf(b.instance), b.qualifier)
+		}
+	}
+}
+
 type bindToTypeValue struct {
 	targetType reflect.Type
 	qualifier  string
+}
+
+func (b bindToTypeValue) String() string {
+	if b.qualifier == `` {
+		return fmt.Sprintf(`type: %v`, b.targetType)
+	}
+	return fmt.Sprintf(`type: %v | qualifier: %s`, b.targetType, b.qualifier)
+}
+
+func (b bindToTypeValue) DebugString() string {
+	return b.String()
 }
 
 func buildTree(c *container) (*dependencyTree, error) {
@@ -88,7 +109,7 @@ func buildDependencyTypeMap(c *container, mapping map[*bind][]bindToTypeValue) (
 	return typeMap
 }
 
-func (t *dependencyTree) injectDependencies(c *container) {
+func (t *dependencyTree) injectDependencies(c *container) error {
 	for _, b := range c.binds {
 		receiverType := reflect.TypeOf(b.instance)
 		if receiverType.Kind() != reflect.Pointer || receiverType.Elem().Kind() != reflect.Struct {
@@ -102,13 +123,19 @@ func (t *dependencyTree) injectDependencies(c *container) {
 
 			if qualifier, tagExists := fields.Type().Field(i).Tag.Lookup(tagInject); tagExists {
 				targetType := field.Type()
-				instance := t.typeToBind[targetType][qualifier].instance
+				bindVal, hasBind := t.typeToBind[targetType][qualifier]
+				if !hasBind || bindVal == nil {
+					return DependencyInjectError{bindToTypeValue{targetType: targetType, qualifier: qualifier}}
+				}
+				instance := bindVal.instance
 
 				pointer := reflect.NewAt(targetType, unsafe.Pointer(field.UnsafeAddr())).Elem()
 				pointer.Set(reflect.ValueOf(instance))
 			}
 		}
 	}
+
+	return nil
 }
 
 func findSingleInstances(typeMap map[reflect.Type]map[string][]*bind) (map[reflect.Type]map[string]*bind, error) {

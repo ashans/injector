@@ -1,4 +1,4 @@
-module injector
+module github.com/ashans/injector
 
 go 1.20
 
