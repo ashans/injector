@@ -2,13 +2,23 @@
 
 > GoLang dependency injection library to be used as a IoC container
 
-## Documentation
-
 ### Features
 
 - Container management for **Go** applications
 - Seamless dependency injection through tags and type matching
 - No manual type casting required
+
+## Documentation
+
+### Installation
+Run following inside project directory
+```shell
+ go get github.com/ashans/injector
+```
+Then import using
+```go
+import "github.com/ashans/injector"
+```
 
 ### Examples
 
