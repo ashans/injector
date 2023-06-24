@@ -1,6 +1,6 @@
 # Injector
 
-> GoLang dependency injection library
+> GoLang dependency injection library to be used as a IoC container
 
 ## Documentation
 
@@ -12,7 +12,7 @@
 
 ### Examples
 
-Container bind and resolve
+#### Container bind and resolve
 
 ```go
 package main
@@ -43,7 +43,7 @@ func main() {
 }
 ```
 
-Resolve with qualifier for multiple implementations
+#### Resolve with qualifier for multiple implementations
 
 ```go
 package main
@@ -80,3 +80,5 @@ func main() {
 	}
 }
 ```
+
+Refer [test cases](container_test.go) for more examples
