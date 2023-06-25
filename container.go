@@ -35,6 +35,9 @@ func (c *container) NamedBind(instance interface{}, qualifier string) error {
 }
 
 func (c *container) ResolveDependencyTree() error {
+	if c.treeResolved {
+		return errors.New(`cannot resolve dependencies of already resolved container`)
+	}
 	tree, err := buildTree(c)
 	if err != nil {
 		return err
@@ -52,6 +55,9 @@ func (c *container) ResolveDependencyTree() error {
 }
 
 func (c *container) RunModules() error {
+	if !c.treeResolved {
+		return errors.New(`cannot run modules if dependencies are not resolved`)
+	}
 	for _, b := range c.binds {
 		if runnable, isRunnable := b.instance.(Runnable); isRunnable {
 			err := runnable.Run()
