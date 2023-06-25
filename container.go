@@ -51,6 +51,19 @@ func (c *container) ResolveDependencyTree() error {
 	return nil
 }
 
+func (c *container) RunModules() error {
+	for _, b := range c.binds {
+		if runnable, isRunnable := b.instance.(Runnable); isRunnable {
+			err := runnable.Run()
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
 func (c *container) bind(instance interface{}, qualifier string) error {
 	if c.treeResolved {
 		return errors.New(`cannot bind new instances after dependency tree is resolved`)
