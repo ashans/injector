@@ -91,4 +91,37 @@ func main() {
 }
 ```
 
+#### Run modules after dependency resolving
+
+```go
+package main
+
+import "github.com/ashans/injector"
+
+type ExampleStruct struct {}
+func (e *ExampleStruct) Run() error {
+	// Module starting code goes here
+	
+	return nil
+}
+func main() {
+    c := injector.New()
+
+    c.Bind(new(ExampleStruct))
+
+    err := c.ResolveDependencyTree()
+    if err != nil {
+        panic(err)
+    }
+
+    // Execute 'Run' method of modules that implements 'Runnable' interface
+    err = c.RunModules()
+    if err != nil {
+        panic(err)
+    }
+}
+
+
+```
+
 Refer [test cases](container_test.go) for more examples
