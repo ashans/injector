@@ -1,3 +1,4 @@
+[![CI](https://github.com/ashans/injector/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/ashans/injector/actions/workflows/ci.yml)
 # Injector
 
 > GoLang dependency injection library to be used as a IoC container

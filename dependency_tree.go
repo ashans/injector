@@ -41,8 +41,6 @@ func (b bindToTypeValue) DebugString() string {
 
 func buildTree(c *container) (*dependencyTree, error) {
 	depMap := buildDependencyBindMap(c)
-	s := fmt.Sprintf(`%v`, depMap[c.binds[3]][0].targetType)
-	println(s)
 	typeMap := buildDependencyTypeMap(c, depMap)
 	singleInstanceMap, err := findSingleInstances(typeMap)
 	if err != nil {

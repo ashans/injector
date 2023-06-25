@@ -43,8 +43,6 @@ func (c *container) ResolveDependencyTree() error {
 		return err
 	}
 
-	tree.PrintMatch()
-
 	err = tree.injectDependencies(c)
 	if err != nil {
 		return err
