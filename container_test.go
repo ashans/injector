@@ -80,6 +80,14 @@ func TestWithQualifier(t *testing.T) {
 	assert.Equal(t, c, c.c1)
 	assert.Equal(t, c, c.c2)
 	assert.Equal(t, c, c.c3)
+	assert.Equal(t, ``, c.name)
+
+	err = container.RunModules()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	assert.Equal(t, `updated`, c.name)
 }
 
 type InterfaceA interface {
@@ -119,15 +127,21 @@ type StructB2 struct{}
 func (s *StructB2) MethodB() {}
 
 type StructC struct {
-	a1 InterfaceA  `inject:"a"`
-	a2 InterfaceA  `inject:"ab"`
-	a3 *StructA    `inject:"a"`
-	b1 InterfaceB  `inject:"b1"`
-	b2 *StructB2   `inject:"b2"`
-	ab InterfaceAB `inject:"ab"`
-	c1 InterfaceC  `inject:"c"`
-	c2 InterfaceC  `inject:""`
-	c3 *StructC    `inject:""`
+	a1   InterfaceA  `inject:"a"`
+	a2   InterfaceA  `inject:"ab"`
+	a3   *StructA    `inject:"a"`
+	b1   InterfaceB  `inject:"b1"`
+	b2   *StructB2   `inject:"b2"`
+	ab   InterfaceAB `inject:"ab"`
+	c1   InterfaceC  `inject:"c"`
+	c2   InterfaceC  `inject:""`
+	c3   *StructC    `inject:""`
+	name string
 }
 
 func (s *StructC) MethodC() {}
+
+func (s *StructC) Run() error {
+	s.name = `updated`
+	return nil
+}
