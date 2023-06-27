@@ -11,6 +11,7 @@
 - Seamless dependency injection through tags and type matching
 - No manual type casting required
 - Module start/run phase
+- Module environment variable injection (using [caarlos0/env](https://github.com/caarlos0/env))
 
 ## Documentation
 
@@ -87,6 +88,29 @@ func main() {
 	c.NamedBind(new(ImplA1), `a1`)
 	c.NamedBind(new(ImplA2), `a2`)
 	c.Bind(new(StructB))
+
+	err := c.ResolveDependencyTree()
+	if err != nil {
+		panic(err)
+	}
+}
+```
+
+#### Resolve environment variables in modules
+
+```go
+package main
+
+import "github.com/ashans/injector"
+
+type ExampleStruct struct{
+	Port int `env:"APP_PORT" envDefault:"8080"` // Will inject 'APP_PORT' to Port 
+}
+
+func main() {
+	c := injector.New()
+
+	c.NamedBind(new(ExampleStruct))
 
 	err := c.ResolveDependencyTree()
 	if err != nil {
