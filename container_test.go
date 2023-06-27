@@ -3,6 +3,7 @@ package injector
 import (
 	"fmt"
 	"github.com/stretchr/testify/assert"
+	"os"
 	"testing"
 )
 
@@ -57,6 +58,15 @@ func TestWithQualifier(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	err = os.Setenv(`APP_PORT`, `8000`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = os.Setenv(`BASE_PATH`, `api`)
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	err = container.ResolveDependencyTree()
 	if err != nil {
 		if resolveErr, ok := err.(DependencyResolveError); ok {
@@ -82,6 +92,10 @@ func TestWithQualifier(t *testing.T) {
 	assert.Equal(t, c, c.c3)
 	assert.Equal(t, ``, c.name)
 
+	assert.Equal(t, 8000, ab.Port)
+	assert.Equal(t, `DEVELOPMENT`, ab.WithDefault)
+	assert.Equal(t, `api`, ab.NotDefault)
+
 	err = container.RunModules()
 	if err != nil {
 		t.Fatal(err)
@@ -103,7 +117,11 @@ type InterfaceAB interface {
 	MethodB()
 }
 
-type StructAB struct{}
+type StructAB struct {
+	Port        int    `env:"APP_PORT"`
+	WithDefault string `env:"TARGET_ENV" envDefault:"DEVELOPMENT"`
+	NotDefault  string `env:"BASE_PATH" envDefault:"app"`
+}
 
 func (s *StructAB) MethodA() {}
 func (s *StructAB) MethodB() {}

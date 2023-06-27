@@ -2,6 +2,7 @@ package injector
 
 import (
 	"errors"
+	env "github.com/caarlos0/env/v8"
 	"reflect"
 )
 
@@ -38,6 +39,12 @@ func (c *container) ResolveDependencyTree() error {
 	if c.treeResolved {
 		return errors.New(`cannot resolve dependencies of already resolved container`)
 	}
+
+	err := c.resolveEnvironmentVariables()
+	if err != nil {
+		return err
+	}
+
 	tree, err := buildTree(c)
 	if err != nil {
 		return err
@@ -87,6 +94,17 @@ func (c *container) bind(instance interface{}, qualifier string) error {
 		singleton: true,
 		qualifier: qualifier,
 	})
+
+	return nil
+}
+
+func (c *container) resolveEnvironmentVariables() error {
+	for _, b := range c.binds {
+		instance := b.instance
+		if err := env.Parse(instance); err != nil {
+			return err
+		}
+	}
 
 	return nil
 }
