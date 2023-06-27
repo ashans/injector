@@ -63,6 +63,9 @@ func TestWithQualifier(t *testing.T) {
 		t.Fatal(err)
 	}
 	err = os.Setenv(`BASE_PATH`, `api`)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	err = container.ResolveDependencyTree()
 	if err != nil {
