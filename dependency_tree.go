@@ -54,23 +54,15 @@ func buildDependencyBindMap(c *container) map[*bind][]bindToTypeValue {
 	bindToType := make(map[*bind][]bindToTypeValue)
 
 	for _, b := range c.binds {
-		receiverType := reflect.TypeOf(b.instance)
-		if receiverType.Kind() != reflect.Pointer || receiverType.Elem().Kind() != reflect.Struct {
+		traversable, _ := traverseDependencies(b.instance, func(_ reflect.Value, targetType reflect.Type, qualifier string) error {
+			bindToType[b] = append(bindToType[b], bindToTypeValue{
+				targetType: targetType,
+				qualifier:  qualifier,
+			})
+			return nil
+		})
+		if !traversable {
 			bindToType[b] = make([]bindToTypeValue, 0)
-			continue
-		}
-
-		fields := reflect.ValueOf(b.instance).Elem()
-
-		for i := 0; i < fields.NumField(); i++ {
-			field := fields.Field(i)
-
-			if qualifier, tagExists := fields.Type().Field(i).Tag.Lookup(tagInject); tagExists {
-				bindToType[b] = append(bindToType[b], bindToTypeValue{
-					targetType: field.Type(),
-					qualifier:  qualifier,
-				})
-			}
 		}
 	}
 
@@ -110,31 +102,47 @@ func buildDependencyTypeMap(c *container, mapping map[*bind][]bindToTypeValue) (
 
 func (t *dependencyTree) injectDependencies(c *container) error {
 	for _, b := range c.binds {
-		receiverType := reflect.TypeOf(b.instance)
-		if receiverType.Kind() != reflect.Pointer || receiverType.Elem().Kind() != reflect.Struct {
-			continue
-		}
-
-		fields := reflect.ValueOf(b.instance).Elem()
-
-		for i := 0; i < fields.NumField(); i++ {
-			field := fields.Field(i)
-
-			if qualifier, tagExists := fields.Type().Field(i).Tag.Lookup(tagInject); tagExists {
-				targetType := field.Type()
-				bindVal, hasBind := t.typeToBind[targetType][qualifier]
-				if !hasBind || bindVal == nil {
-					return DependencyInjectError{bindToTypeValue{targetType: targetType, qualifier: qualifier}}
-				}
-				instance := bindVal.instance
-
-				pointer := reflect.NewAt(targetType, unsafe.Pointer(field.UnsafeAddr())).Elem()
-				pointer.Set(reflect.ValueOf(instance))
+		_, err := traverseDependencies(b.instance, func(field reflect.Value, targetType reflect.Type, qualifier string) error {
+			bindVal, hasBind := t.typeToBind[targetType][qualifier]
+			if !hasBind || bindVal == nil {
+				return DependencyInjectError{bindToTypeValue{targetType: targetType, qualifier: qualifier}}
 			}
+			instance := bindVal.instance
+
+			pointer := reflect.NewAt(targetType, unsafe.Pointer(field.UnsafeAddr())).Elem()
+			pointer.Set(reflect.ValueOf(instance))
+
+			return nil
+		})
+		if err != nil {
+			return err
 		}
 	}
 
 	return nil
+}
+
+func traverseDependencies(instance interface{}, onFound func(field reflect.Value, targetType reflect.Type, qualifier string) error) (
+	traversable bool, err error) {
+	receiverType := reflect.TypeOf(instance)
+	if receiverType.Kind() != reflect.Pointer || receiverType.Elem().Kind() != reflect.Struct {
+		return false, nil
+	}
+
+	fields := reflect.ValueOf(instance).Elem()
+
+	for i := 0; i < fields.NumField(); i++ {
+		field := fields.Field(i)
+
+		if qualifier, tagExists := fields.Type().Field(i).Tag.Lookup(tagInject); tagExists {
+			err = onFound(field, field.Type(), qualifier)
+			if err != nil {
+				return false, err
+			}
+		}
+	}
+
+	return true, nil
 }
 
 func findSingleInstances(typeMap map[reflect.Type]map[string][]*bind) (map[reflect.Type]map[string]*bind, error) {
