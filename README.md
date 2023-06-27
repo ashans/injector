@@ -10,6 +10,7 @@
 - Container management for **Go** applications
 - Seamless dependency injection through tags and type matching
 - No manual type casting required
+- Module start/run phase
 
 ## Documentation
 
